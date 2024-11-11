@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -8,77 +8,25 @@ import {
   ScrollView,
   SafeAreaView,
 } from "react-native";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchBikes, setSelectedCategory } from "../redux/bikesSlice";
 
 const BikeShopScreen = ({ navigation }) => {
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const dispatch = useDispatch();
+  const { items, status, error, selectedCategory } = useSelector(
+    (state) => state.bikes
+  );
+
+  useEffect(() => {
+    if (status === "idle") {
+      dispatch(fetchBikes());
+    }
+  }, [status, dispatch]);
 
   const categories = [
     { id: 1, name: "All" },
     { id: 2, name: "Roadbike" },
     { id: 3, name: "Mountain" },
-  ];
-
-  const bikes = [
-    {
-      id: 1,
-      name: "Pinarello",
-      price: 1800,
-      discountPercent: 15,
-      image: require("../assets/1.png"),
-      category: "Mountain",
-      description:
-        "It is a very important form of writing as we write almost everything in paragraphs, be it an answer, essay, story, emails, etc.",
-    },
-    {
-      id: 2,
-      name: "Pina Mountai",
-      price: 1700,
-      discountPercent: 15,
-      image: require("../assets/2.png"),
-      category: "Mountain",
-      description:
-        "It is a very important form of writing as we write almost everything in paragraphs, be it an answer, essay, story, emails, etc.",
-    },
-    {
-      id: 3,
-      name: "Pina Bike",
-      price: 1500,
-      discountPercent: 15,
-      image: require("../assets/3.png"),
-      category: "Roadbike",
-      description:
-        "It is a very important form of writing as we write almost everything in paragraphs, be it an answer, essay, story, emails, etc.",
-    },
-    {
-      id: 4,
-      name: "Pinarello",
-      price: 1900,
-      discountPercent: 15,
-      image: require("../assets/4.png"),
-      category: "Roadbike",
-      description:
-        "It is a very important form of writing as we write almost everything in paragraphs, be it an answer, essay, story, emails, etc.",
-    },
-    {
-      id: 5,
-      name: "Pinarello",
-      price: 2700,
-      discountPercent: 15,
-      image: require("../assets/5.png"),
-      category: "Mountain",
-      description:
-        "It is a very important form of writing as we write almost everything in paragraphs, be it an answer, essay, story, emails, etc.",
-    },
-    {
-      id: 6,
-      name: "Pinarello",
-      price: 1350,
-      discountPercent: 15,
-      image: require("../assets/6.png"),
-      category: "Mountain",
-      description:
-        "It is a very important form of writing as we write almost everything in paragraphs, be it an answer, essay, story, emails, etc.",
-    },
   ];
 
   const calculateDiscountedPrice = (price, discountPercent) => {
@@ -87,8 +35,8 @@ const BikeShopScreen = ({ navigation }) => {
 
   const filteredBikes =
     selectedCategory === "All"
-      ? bikes
-      : bikes.filter((bike) => bike.category === selectedCategory);
+      ? items
+      : items.filter((bike) => bike.category === selectedCategory);
 
   const BikeCard = ({ bike }) => {
     const discountedPrice = calculateDiscountedPrice(
@@ -111,7 +59,7 @@ const BikeShopScreen = ({ navigation }) => {
           <Text style={styles.favoriteIcon}>♡</Text>
         </TouchableOpacity>
         <Image
-          source={bike.image}
+          source={{ uri: bike.image }} // Assuming API returns image URL
           style={styles.bikeImage}
           resizeMode="contain"
         />
@@ -121,6 +69,14 @@ const BikeShopScreen = ({ navigation }) => {
     );
   };
 
+  if (status === "loading") {
+    return <Text style={styles.loadingText}>Loading...</Text>;
+  }
+
+  if (status === "failed") {
+    return <Text style={styles.errorText}>Error: {error}</Text>;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.header}>The world's Best Bike</Text>
@@ -128,7 +84,7 @@ const BikeShopScreen = ({ navigation }) => {
         style={styles.addButton}
         onPress={() => navigation.navigate("AddProduct")}
       >
-        <Text style={styles.addButtonText}>+ Add Product</Text>
+        <Text style={styles.addButtonText}>Add Product</Text>
       </TouchableOpacity>
       <View style={styles.categoriesContainer}>
         {categories.map((category) => (
@@ -138,7 +94,7 @@ const BikeShopScreen = ({ navigation }) => {
               styles.categoryButton,
               selectedCategory === category.name && styles.selectedCategory,
             ]}
-            onPress={() => setSelectedCategory(category.name)}
+            onPress={() => dispatch(setSelectedCategory(category.name))}
           >
             <Text
               style={[
@@ -243,6 +199,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#007AFF",
     fontWeight: "600",
+  },
+  loadingText: {
+    fontSize: 18,
+    textAlign: "center",
+    marginTop: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    textAlign: "center",
+    marginTop: 20,
+    color: "red",
+  },
+  addButton: {
+    width: 100,
+    height: 50,
+    backgroundColor: "#E94141",
+    borderRadius: 20,
+    marginBottom: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: "auto",
+  },
+  addButtonText: {
+    color: "#fff",
+    textAlign: "center",
   },
 });
 

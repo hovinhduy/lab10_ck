@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,10 +10,16 @@ import {
   Image,
   Alert,
 } from "react-native";
-import * as ImagePicker from "react-native-image-picker";
+import * as ImagePicker from "expo-image-picker";
 import { Picker } from "@react-native-picker/picker";
+import { useDispatch, useSelector } from "react-redux";
+import { addBike } from "../redux/bikesSlice";
 
 const AddProductScreen = ({ navigation }) => {
+  const dispatch = useDispatch();
+  const addStatus = useSelector((state) => state.bikes.addStatus);
+  const addError = useSelector((state) => state.bikes.addError);
+
   const [productData, setProductData] = useState({
     name: "",
     price: "",
@@ -26,26 +32,48 @@ const AddProductScreen = ({ navigation }) => {
 
   const [errors, setErrors] = useState({});
 
-  const pickImage = () => {
-    ImagePicker.launchImageLibrary(
-      {
-        mediaType: "photo",
-        quality: 0.8,
-      },
-      (response) => {
-        if (response.didCancel) {
-          console.log("User cancelled image picker");
-        } else if (response.error) {
-          console.log("ImagePicker Error: ", response.error);
-        } else {
-          const source = { uri: response.assets[0].uri };
-          setProductData((prev) => ({
-            ...prev,
-            image: source,
-          }));
-        }
+  // Theo dõi trạng thái thêm sản phẩm
+  useEffect(() => {
+    if (addStatus === "succeeded") {
+      Alert.alert("Success", "Product added successfully!", [
+        {
+          text: "OK",
+          onPress: () => navigation.goBack(),
+        },
+      ]);
+    } else if (addStatus === "failed") {
+      Alert.alert("Error", addError || "Failed to add product");
+    }
+  }, [addStatus, addError]);
+
+  const pickImage = async () => {
+    try {
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permissionResult.granted === false) {
+        Alert.alert(
+          "Permission needed",
+          "Permission to access camera roll is required!"
+        );
+        return;
       }
-    );
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+        allowsEditing: true,
+      });
+
+      if (!result.canceled) {
+        setProductData((prev) => ({
+          ...prev,
+          image: result,
+        }));
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "Failed to pick image. Please try again.");
+    }
   };
 
   const validateForm = () => {
@@ -71,16 +99,12 @@ const AddProductScreen = ({ navigation }) => {
       newErrors.discountPercent = "Discount must be between 0 and 100";
     }
 
-    if (!productData.category.trim()) {
+    if (!productData.category) {
       newErrors.category = "Category is required";
     }
 
     if (!productData.description.trim()) {
       newErrors.description = "Description is required";
-    }
-
-    if (!productData.owner.trim()) {
-      newErrors.owner = "Owner name is required";
     }
 
     if (!productData.image) {
@@ -91,16 +115,13 @@ const AddProductScreen = ({ navigation }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateForm()) {
-      // Here you would typically send the data to your backend
-      console.log("Product Data:", productData);
-      Alert.alert("Success", "Product added successfully!", [
-        {
-          text: "OK",
-          onPress: () => navigation.goBack(),
-        },
-      ]);
+      try {
+        await dispatch(addBike(productData)).unwrap();
+      } catch (error) {
+        Alert.alert("Error", error.message || "Failed to add product");
+      }
     }
   };
 
@@ -134,6 +155,7 @@ const AddProductScreen = ({ navigation }) => {
           onPress={pickImage}
         >
           {productData.image ? (
+            // Hiển thị ảnh nếu đã chọn, nếu không sẽ hiển thị một placeholder
             <Image
               source={productData.image}
               style={styles.selectedImage}
@@ -194,15 +216,6 @@ const AddProductScreen = ({ navigation }) => {
         />
 
         <Input
-          label="Category"
-          placeholder="Enter category (Mountain/Roadbike)"
-          value={productData.category}
-          onChangeText={(text) =>
-            setProductData((prev) => ({ ...prev, category: text }))
-          }
-          error={errors.category}
-        />
-        <Input
           label="Description"
           placeholder="Enter product description"
           multiline
@@ -216,8 +229,17 @@ const AddProductScreen = ({ navigation }) => {
           style={styles.descriptionInput}
         />
 
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>Add Product</Text>
+        <TouchableOpacity
+          style={[
+            styles.submitButton,
+            addStatus === "loading" && styles.submitButtonDisabled,
+          ]}
+          onPress={handleSubmit}
+          disabled={addStatus === "loading"}
+        >
+          <Text style={styles.submitButtonText}>
+            {addStatus === "loading" ? "Adding..." : "Add Product"}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -326,6 +348,9 @@ const styles = StyleSheet.create({
   picker: {
     height: 50,
     color: "#333",
+  },
+  submitButtonDisabled: {
+    opacity: 0.7,
   },
 });
 

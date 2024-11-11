@@ -7,21 +7,24 @@ import {
   TouchableOpacity,
   Image,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 
-const Screen01 = () => {
+const Screen01 = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Text style={{ textAlign: "center", fontWeight: 400, fontSize: 15 }}>
         A premium online store for{"\n"} sporter and their stylish choice
       </Text>
       <View style={styles.anhnen}>
-        {/* <Image
+        <Image
           source={{
             uri: "https://i.ibb.co/gFHRcmv/bifour-removebg-preview.png",
           }}
           style={styles.image}
-        /> */}
-        <Image source={require("../assets/1.png")} />
+          resizeMode="contain" // Thử nghiệm các giá trị khác như "cover" hoặc "stretch"
+          onError={(error) => console.log("Image loading error:", error)}
+        />
+        {/* <Image source={require("../assets/1.png")} /> */}
       </View>
       <View style={{ marginTop: 50 }}>
         <Text style={{ fontWeight: 700, fontSize: 20, textAlign: "center" }}>
@@ -38,6 +41,7 @@ const Screen01 = () => {
             alignContent: "center",
             justifyContent: "center",
           }}
+          onPress={() => navigation.navigate("BikeShop")}
         >
           <Text style={{ textAlign: "center" }}>Get Started</Text>
         </TouchableOpacity>
@@ -61,6 +65,10 @@ const styles = StyleSheet.create({
     marginTop: 50,
     alignItems: "center",
     justifyContent: "center",
+  },
+  image: {
+    width: "100%",
+    height: "100%",
   },
 });
 

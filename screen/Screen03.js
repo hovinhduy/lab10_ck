@@ -10,24 +10,21 @@ import {
 } from "react-native";
 
 const BikeDetailScreen = ({ route, navigation }) => {
-  // In a real app, you'd get this data from route.params
-  const bikeData = {
-    id: 1,
-    name: "Pina Mountain",
-    originalPrice: 449,
-    discountPercent: 15,
-    discountedPrice: 350,
-    description:
-      "It is a very important form of writing as we write almost everything in paragraphs, be it an answer, essay, story, emails, etc.",
-    image: require("../assets/2.png"),
+  const { bike } = route.params;
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  const calculateDiscountedPrice = (price, discountPercent) => {
+    return price - (price * discountPercent) / 100;
   };
 
-  const [isFavorite, setIsFavorite] = useState(false);
+  const discountedPrice = calculateDiscountedPrice(
+    bike.price,
+    bike.discountPercent
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
-        {/* Header with back button */}
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -37,32 +34,29 @@ const BikeDetailScreen = ({ route, navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Bike Image Section */}
         <View style={styles.imageContainer}>
           <Image
-            source={bikeData.image}
+            source={{ uri: bike.image }}
             style={styles.bikeImage}
             resizeMode="contain"
           />
         </View>
 
-        {/* Bike Details Section */}
         <View style={styles.detailsContainer}>
-          <Text style={styles.bikeName}>{bikeData.name}</Text>
+          <Text style={styles.bikeName}>{bike.name}</Text>
 
           <View style={styles.priceContainer}>
             <Text style={styles.discountText}>
-              {bikeData.discountPercent}% OFF | {bikeData.discountedPrice}$
+              {bike.discountPercent}% OFF | ${discountedPrice.toFixed(0)}
             </Text>
-            <Text style={styles.originalPrice}>{bikeData.originalPrice}$</Text>
+            <Text style={styles.originalPrice}>${bike.price}</Text>
           </View>
 
           <View style={styles.descriptionSection}>
             <Text style={styles.descriptionTitle}>Description</Text>
-            <Text style={styles.descriptionText}>{bikeData.description}</Text>
+            <Text style={styles.descriptionText}>{bike.description}</Text>
           </View>
 
-          {/* Bottom Actions */}
           <View style={styles.actionContainer}>
             <TouchableOpacity
               onPress={() => setIsFavorite(!isFavorite)}
